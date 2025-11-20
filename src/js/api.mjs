@@ -5,10 +5,11 @@ export async function fetchAllBikeStations() {
   try {
     const res = await fetch(url);
     const data = await res.json();
-    return data.renBikeStatus;
+    // const totalCount = parseInt(data.rentBikeStatus.rackTotCnt)
+    // console.log(`[API] 총 대여소 개수: ${totalCount}개`);
+
+    return data.rentBikeStatus;
   } catch (err) {
-    console.log(err);
+    console.log(`API 오류: ${err}`);
   }
 }
-
-const stations = await fetchAllBikeStations();

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>서울시 공공자전거 실시간 대여정보</title>
-    <link rel="stylesheet" href="./src/css/style.css">
+    <link rel="stylesheet" href="./src/css/style.css" />
   </head>
   <body>
     <div class="container">
@@ -17,8 +17,8 @@
         <div class="info-section">
           <div class="stats">
             <div class="stat-item">
-              <div class="stat-value" id="totalStations"></div>
-              <div class="stat-label"></div>
+              <div class="stat-value" id="totalStations">-</div>
+              <div class="stat-label">총 대여소</div>
             </div>
             <div class="stat-item">
               <div class="stat-value" id="totalBikes">-</div>
@@ -28,30 +28,32 @@
         </div>
 
         <div class="controls">
-          <button class="btn-primary" id="currentLocationBtn">📍 현재 위치</button>
+          <button class="btn-primary" id="currentLocationBtn">
+            📍 현재 위치
+          </button>
           <button class="btn-secondary" id="refreshBtn">🔄 새로고침</button>
         </div>
 
         <div class="legend">
           <div class="legend-item">
-              <div class="legend-marker green"></div>
-              <span>자전거 5개 이상</span>
+            <div class="legend-marker green"></div>
+            <span>자전거 5개 이상</span>
           </div>
           <div class="legend-item">
-              <div class="legend-marker red"></div>
-              <span>자전거 없음</span>
+            <div class="legend-marker red"></div>
+            <span>자전거 없음</span>
           </div>
         </div>
 
         <div class="station-list" id="stationList">
-            <div class="loading">
-                <div class="spinner"></div>
-                <span>대여소 정보 로딩중...</span>
-            </div>
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>대여소 정보 로딩중...</span>
+          </div>
         </div>
       </div>
 
-      <div id="map" style="width:100%;height:100%;"></div>
+      <div id="map" style="width: 100%; height: 100%"></div>
     </div>
 
     <script type="module" src="./src/js/main.mjs"></script>

@@ -1,3 +1,6 @@
+import { API_CONFIG } from "../config/config.mjs";
+API_CONFIG.KAKAO_MAP_KEY;
+
 export function initMap() {
   const map = new kakao.maps.Map(document.getElementById("map"), {
     center: new kakao.maps.LatLng(37.4983, 127.0286),
@@ -82,8 +85,8 @@ export function displayMarkers(stations) {
   });
 }
 
-export function addMarkers(stations) {
-  stations.rentBikeStatus.row.forEach((station) => {
+export function addMarkers(stations, map) {
+  stations.row.forEach((station) => {
     const marker = new kakao.maps.Marker({
       map: map,
       position: new kakao.maps.LatLng(
@@ -91,10 +94,11 @@ export function addMarkers(stations) {
         station.stationLongitude
       ),
     });
+    return marker
   });
 }
 
-export function moveToCurrentLocation() {
+export function moveToCurrentLocation(map) {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
