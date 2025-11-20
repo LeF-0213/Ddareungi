@@ -1,8 +1,10 @@
-import { API_CONFIG } from "../config/config.mjs";
-API_CONFIG.KAKAO_MAP_KEY;
+let map;
+let markers = [];
+let infoWindows = [];
+let clusterer;
 
 export function initMap() {
-  const map = new kakao.maps.Map(document.getElementById("map"), {
+  map = new kakao.maps.Map(document.getElementById("map"), {
     center: new kakao.maps.LatLng(37.5665, 126.978),
     level: 6,
   });
@@ -15,14 +17,15 @@ export function initMap() {
 }
 
 export function displayMarkers(stations) {
-  let map;
-  let markers = [];
-  let infoWindows = [];
-  let clusterer;
+  markers.forEach((marker) => marker.setMap(null));
+  infoWindows.forEach((iw) => iw.close());
+  markers = [];
+  infoWindows = [];
+  clusterer.clear();
 
-  stations.forEach((station, idx) => {
-    const lat = parseFloat(station.latitude);
-    const lng = parseFloat(station.longitude);
+  stations.forEach((station) => {
+    const lat = parseFloat(station.stationLatitude);
+    const lng = parseFloat(station.stationLongitude);
     const bikeCount = parseInt(station.parkingBikeTotCnt);
 
     const imageUrl =
@@ -40,6 +43,7 @@ export function displayMarkers(stations) {
       position: new kakao.maps.LatLng(lat, lng),
       image: markerImage,
       title: station.stationName,
+      map: map,
     });
 
     const geocoder = new kakao.maps.services.Geocoder();
@@ -98,12 +102,10 @@ export function addMarkers(stations, map) {
   });
 }
 
-export function moveToCurrentLocation(map) {
-  debugger;
+export function moveToCurrentLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        debugger;
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         map.setCenter(new kakao.maps.LatLng(lat, lng));
@@ -114,5 +116,23 @@ export function moveToCurrentLocation(map) {
         alert("위치 정보를 가져올 수 없습니다.");
       }
     );
+  }
+}
+
+export function focusStation(idx, sorted) {
+  const station = sorted[idx];
+  const lat = parseFloat(station.stationLatitude);
+  const lng = parseFloat(station.stationLongitude);
+
+  map.setCenter(new kakao.maps.LatLng(lat, lng));
+
+  const marker = markers.find(
+    (m) => m.getPosition().getLat() === lat && m.getPosition().getLng() === lng
+  );
+
+  if (marker) {
+    const index = addMarkers.indexOf(marker);
+    infoWindows.forEach((iw) => iw.close());
+    infoWindows[idx].open(map, marker);
   }
 }

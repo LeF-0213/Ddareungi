@@ -32,13 +32,12 @@ async function startApp() {
   const stations = await fetchAllBikeStations();
   addMarkers(stations, map);
   displayStats(stations, map, clusterer);
-  displayStationList(stations);
-  // moveToCurrentLocation();
+  displayStationList(stations, map);
 }
 
-// document.addEventListener("DOMContentLoaded", async () => {
-
-// });
+document.addEventListener("DOMContentLoaded", () => {
+  setupEventListeners();
+});
 
 function setupEventListeners() {
   document

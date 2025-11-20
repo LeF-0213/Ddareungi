@@ -1,3 +1,5 @@
+import { focusStation } from "./map.mjs";
+
 export function displayStats(stations) {
   const totalStation = stations.list_total_count;
   let totalBikes = 0;
@@ -32,7 +34,7 @@ export async function displayStationList(stations) {
 
     const stationItem = document.createElement("div");
     stationItem.className = "station-item";
-    stationItem.onclick = () => window.focusStation(i, sorted);
+    stationItem.onclick = () => focusStation(i, sorted);
     stationItem.innerHTML = `
       <div class="station-name">${station.stationName}</div>
       <div class="station-info">
@@ -58,28 +60,4 @@ async function getAddressFromCoords(lat, lng) {
       }
     });
   });
-}
-
-export function focusStation(stations, idx) {
-  const sorted = stations.row.sort(
-    (a, b) =>
-      parseInt(b.stationLatitude) +
-      parseInt(b.stationLongitude) -
-      (parseInt(a.stationLatitude) + parseInt(a.stationLongitude))
-  );
-  const station = sorted[idx];
-  const lat = parseFloat(station.latitude);
-  const lng = parseFloat(station.longitude);
-
-  map.setCenter(new kakao.maps.LatLng(lat, lng));
-
-  const marker = marker.find(
-    (m) => m.getPosition().getLat() === lat && m.getPosition().getLng() === lng
-  );
-
-  if (marker) {
-    const index = addMarkers.indexOf(marker);
-    infoWindows.forEach((iw) => iw.close());
-    infoWindows[idx].open(map, marker);
-  }
 }
