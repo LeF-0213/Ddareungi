@@ -3,7 +3,7 @@ API_CONFIG.KAKAO_MAP_KEY;
 
 export function initMap() {
   const map = new kakao.maps.Map(document.getElementById("map"), {
-    center: new kakao.maps.LatLng(37.4983, 127.0286),
+    center: new kakao.maps.LatLng(37.5665, 126.978),
     level: 6,
   });
   const clusterer = new kakao.maps.MarkerClusterer({
@@ -94,23 +94,25 @@ export function addMarkers(stations, map) {
         station.stationLongitude
       ),
     });
-    return marker
+    return marker;
   });
 }
 
 export function moveToCurrentLocation(map) {
+  debugger;
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        map.setCenter(
-          new kakao.maps.LatLng(
-            position.coords.latitude,
-            position.coords.longitude
-          )
-        );
+        debugger;
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        map.setCenter(new kakao.maps.LatLng(lat, lng));
         map.setLevel(6);
       },
-      () => alert("위치 정보를 가져올 수 없습니다.")
+      (error) => {
+        console.log(error);
+        alert("위치 정보를 가져올 수 없습니다.");
+      }
     );
   }
 }
