@@ -1,0 +1,19 @@
+# 환경 변수 및 API 키
+.env
+.env.local
+.env.*.local
+config.js
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# 임시파일
+*.tmp
+.cache/
+
+# 로그
+logs/
+*.log

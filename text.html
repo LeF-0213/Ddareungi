@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울시 공공자전거 실시간 대여정보</title>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62fc5e6d6a9fb9a94b0411c55f39e1ed&libraries=clusterer,services"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: white;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .status {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .info-section {
+            padding: 15px 20px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .controls {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .station-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .station-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .station-item:hover {
+            background: #f5f5f5;
+        }
+
+        .station-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .station-info {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .bike-count {
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .bike-count.available {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .bike-count.unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        #map {
+            flex: 1;
+            background: white;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .legend {
+            padding: 15px 20px;
+            background: #f9f9f9;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-marker {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .legend-marker.green {
+            background: #27ae60;
+        }
+
+        .legend-marker.red {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="header">
+                <h1>🚴 따릉이 실시간</h1>
+                <div class="status" id="loadStatus">데이터 로딩중...</div>
+            </div>
+
+            <div class="info-section">
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalStations">-</div>
+                        <div class="stat-label">총 대여소</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalBikes">-</div>
+                        <div class="stat-label">전체 자전거</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-primary" id="currentLocationBtn">📍 현재 위치</button>
+                <button class="btn-secondary" id="refreshBtn">🔄 새로고침</button>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-marker green"></div>
+                    <span>자전거 5개 이상</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-marker red"></div>
+                    <span>자전거 없음</span>
+                </div>
+            </div>
+
+            <div class="station-list" id="stationList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>대여소 정보 로딩중...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="map" style="width:100%;height:100%;"></div>
+    </div>
+
+    <script>
+        const API_KEY = "6945697559736f6c38314e6d567852"; // 본인 인증키로 변경
+        const MAP_API_KEY = '62fc5e6d6a9fb9a94b0411c55f39e1ed'; // 카카오맵 API 키로 변경
+        
+        let map;
+        let markers = [];
+        let clusterer;
+        let allStations = [];
+        let infoWindows = [];
+
+        // 페이지 로드 시 초기화
+        window.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadAllBikeData();
+            setupEventListeners();
+        });
+
+        // 지도 초기화
+        function initMap() {
+            const container = document.getElementById('map');
+            const options = {
+                center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울 중심
+                level: 6
+            };
+            map = new kakao.maps.Map(container, options);
+            clusterer = new kakao.maps.MarkerClusterer({
+                map: map,
+                averageCenter: true,
+                minLevel: 10
+            });
+        }
+
+        // 현재 위치로 이동
+        function moveToCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        map.setCenter(new kakao.maps.LatLng(lat, lng));
+                        map.setLevel(6);
+                    },
+                    () => alert('위치 정보를 가져올 수 없습니다.')
+                );
+            }
+        }
+
+        // 전체 자전거 데이터 로드 (다중 요청)
+        async function loadAllBikeData() {
+            try {
+                document.getElementById('loadStatus').textContent = '데이터 로딩중...';
+                allStations = [];
+
+                // 첫 요청으로 총 개수 확인
+                const firstResponse = await fetch(
+                    `http://openapi.seoul.go.kr:8088/${API_KEY}/json/bikeList/1/1000`
+                );
+                const firstData = await firstResponse.json();
+                const totalCount = parseInt(firstData.rentBikeStatus.rackTotCnt);
+
+                // 필요한 요청 개수 계산 (1000개씩)
+                const requests = [];
+                for (let start = 1; start <= totalCount; start += 1000) {
+                    const end = Math.min(start + 999, totalCount);
+                    requests.push(
+                        fetch(`http://openapi.seoul.go.kr:8088/${API_KEY}/json/bikeList/${start}/${end}/`)
+                            .then(res => res.json())
+                    );
+                }
+
+                // 모든 요청 병렬 처리
+                const responses = await Promise.all(requests);
+                
+                responses.forEach(data => {
+                    if (data.rentBikeStatus && Array.isArray(data.rentBikeStatus)) {
+                        // 첫 번째 항목은 메타데이터이므로 제외
+                        const stations = data.rentBikeStatus.row.slice(1);
+                        allStations = allStations.concat(stations);
+                    }
+                });
+
+                displayStats();
+                displayMarkers();
+                displayStationList();
+                document.getElementById('loadStatus').textContent = '✓ 데이터 로드 완료';
+
+            } catch (error) {
+                console.error('API 오류:', error);
+                document.getElementById('loadStatus').textContent = '⚠ 데이터 로드 실패';
+                alert('데이터를 불러오는데 실패했습니다. API 키를 확인하세요.');
+            }
+        }
+
+        // 통계 표시
+        function displayStats() {
+            const totalStations = allStations.length;
+            const totalBikes = allStations.reduce((sum, station) => 
+                sum + parseInt(station.parkingBikeTotCnt || 0), 0
+            );
+
+            document.getElementById('totalStations').textContent = totalStations.toLocaleString();
+            document.getElementById('totalBikes').textContent = totalBikes.toLocaleString();
+        }
+
+        // 마커 표시
+        function displayMarkers() {
+            // 기존 마커 제거
+            markers.forEach(marker => marker.setMap(null));
+            infoWindows.forEach(iw => iw.close());
+            markers = [];
+            infoWindows = [];
+            clusterer.clear();
+
+            allStations.forEach((station, index) => {
+                const lat = parseFloat(station.latitude);
+                const lng = parseFloat(station.longitude);
+                const bikeCount = parseInt(station.parkingBikeTotCnt || 0);
+
+                // 자전거 수에 따라 마커 색상 결정
+                const imageUrl = bikeCount >= 5 
+                    ? 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_greeb.png'
+                    : 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
+
+                const markerImage = new kakao.maps.MarkerImage(
+                  imageUrl,
+                  new kakao.maps.Size(31, 35),
+                  new kakao.maps.Point(16, 34)
+                );
+
+                const marker = new kakao.maps.Marker({
+                    position: new kakao.maps.LatLng(lat, lng),
+                    image: markerImage,
+                    title: station.stationName
+                });
+
+                const infoWindow = new kakao.maps.InfoWindow({
+                    content: `
+                        <div style="padding: 12px; font-size: 13px; min-width: 200px;">
+                            <div style="font-weight: bold; margin-bottom: 8px; color: #333;">${station.stationName}</div>
+                            <div style="margin-bottom: 6px;">
+                                <span style="color: #666;">자전거:</span> 
+                                <span style="font-weight: bold; color: #27ae60;">${bikeCount}개</span>
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                <span style="color: #666;">보관소:</span> 
+                                <span style="font-weight: bold;">${station.rackTotCnt}개</span>
+                            </div>
+                            <div style="font-size: 12px; color: #999; margin-top: 8px;">
+                                주소: ${station.adres}
+                            </div>
+                        </div>
+                    `,
+                    removable: true
+                });
+
+                marker.addListener('click', () => {
+                    infoWindows.forEach(iw => iw.close());
+                    infoWindow.open(map, marker);
+                });
+
+                markers.push(marker);
+                infoWindows.push(infoWindow);
+                clusterer.addMarker(marker);
+            });
+        }
+
+        // 대여소 목록 표시
+        function displayStationList() {
+            const listDiv = document.getElementById('stationList');
+            
+            const sorted = [...allStations].sort((a, b) => 
+            parseInt(b.stationLatitude) +
+            parseInt(b.stationLongitude) -
+            (parseInt(a.parkingBikeTotCnt) + parseInt(a.stationLongitude))
+            );
+
+            listDiv.innerHTML = sorted.map((station, idx) => {
+                const bikeCount = parseInt(station.parkingBikeTotCnt || 0);
+                const isAvailable = bikeCount >= 5;
+                
+                return `
+                    <div class="station-item" onclick="focusStation(${idx})">
+                        <div class="station-name">${station.stationName}</div>
+                        <div class="station-info">
+                            <span>${station.adres}</span>
+                            <span class="bike-count ${isAvailable ? 'available' : 'unavailable'}">
+                                🚴 ${bikeCount}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 대여소 포커스
+        function focusStation(index) {
+            const sorted = [...allStations].sort((a, b) => 
+                parseInt(b.parkingBikeTotCnt || 0) - parseInt(a.parkingBikeTotCnt || 0)
+            );
+            const station = sorted[index];
+            const lat = parseFloat(station.latitude);
+            const lng = parseFloat(station.longitude);
+
+            map.setCenter(new kakao.maps.LatLng(lat, lng));
+            
+            const marker = markers.find(m => 
+                m.getPosition().getLat() === lat && m.getPosition().getLng() === lng
+            );
+            
+            if (marker) {
+                const idx = markers.indexOf(marker);
+                infoWindows.forEach(iw => iw.close());
+                infoWindows[idx].open(map, marker);
+            }
+        }
+
+        // 이벤트 리스너
+        function setupEventListeners() {
+            document.getElementById('currentLocationBtn').addEventListener('click', moveToCurrentLocation);
+            document.getElementById('refreshBtn').addEventListener('click', loadAllBikeData);
+        }
+    </script>
+</body>
+</html>
